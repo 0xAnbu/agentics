@@ -1,0 +1,10 @@
+.venv
+data
+archives
+tests
+scripts
+docs
+*.db
+*.db-wal
+*.db-shm
+.env

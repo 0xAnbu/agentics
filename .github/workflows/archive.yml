@@ -1,0 +1,49 @@
+# Optional: monthly verified archive for deployments without their own cron (Vercel).
+# Enable by adding repo secrets AGENTLINK_URL and AGENTLINK_ADMIN_TOKEN. Without them it is a no-op.
+# Order matters: archive -> store artifact -> only then prune (server re-verifies the SHA-256).
+name: archive
+
+on:
+  schedule:
+    - cron: "17 3 1 * *"  # 03:17 UTC on the 1st of each month
+  workflow_dispatch:
+    inputs:
+      older_than_days:
+        description: "Archive messages older than N days"
+        default: "30"
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    env:
+      AGENTLINK_URL: ${{ secrets.AGENTLINK_URL }}
+      AGENTLINK_TOKEN: ${{ secrets.AGENTLINK_ADMIN_TOKEN }}
+    steps:
+      - name: check configuration
+        id: cfg
+        run: |
+          if [ -z "$AGENTLINK_URL" ] || [ -z "$AGENTLINK_TOKEN" ]; then
+            echo "Secrets not set; skipping."; echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else echo "enabled=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.enabled == 'true'
+      - uses: actions/setup-python@v5
+        if: steps.cfg.outputs.enabled == 'true'
+        with:
+          python-version: "3.12"
+      - name: export
+        if: steps.cfg.outputs.enabled == 'true'
+        run: python -m agentlink.cli archive --older-than-days "${{ inputs.older_than_days || '30' }}" --out out
+      - uses: actions/upload-artifact@v4
+        id: upload
+        if: steps.cfg.outputs.enabled == 'true' && hashFiles('out/*.gz') != ''
+        with:
+          name: agentlink-archive-${{ github.run_id }}
+          path: out/
+          retention-days: 90
+      - name: prune (only after the artifact is stored)
+        if: steps.upload.outcome == 'success'
+        run: python -m agentlink.cli archive-prune out

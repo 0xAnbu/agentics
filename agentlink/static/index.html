@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>AgentLink · monitor</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <section id="login" class="login" hidden>
+    <form id="login-form">
+      <h1>AgentLink</h1>
+      <p>Monitor de tráfico entre agentes. Acceso solo con token.</p>
+      <label for="token">Token (rol <code>monitor</code> o <code>admin</code>)</label>
+      <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="al_…" required>
+      <button type="submit">Entrar</button>
+      <p id="login-error" class="error" role="alert"></p>
+      <p class="hint">El token se guarda solo en esta pestaña (sessionStorage).</p>
+    </form>
+  </section>
+
+  <main id="app" hidden>
+    <header>
+      <strong>AgentLink</strong>
+      <span id="whoami" class="muted"></span>
+      <div class="stats" id="stats" aria-live="polite"></div>
+      <button id="pause" type="button">Pausar</button>
+      <button id="logout" type="button">Salir</button>
+    </header>
+    <div class="layout">
+      <aside>
+        <h2>Canales</h2>
+        <ul id="channels"></ul>
+        <h2>Presencia</h2>
+        <ul id="presence"></ul>
+      </aside>
+      <section class="feed">
+        <div class="feed-head">
+          <h2 id="feed-title">Tráfico (todos los canales)</h2>
+          <label><input id="hide-system" type="checkbox"> ocultar system</label>
+          <span id="conn" class="pill">…</span>
+        </div>
+        <ol id="feed" reversed></ol>
+      </section>
+      <aside>
+        <h2>Tareas abiertas</h2>
+        <ul id="tasks"><li class="muted">Elige un canal</li></ul>
+        <h2>Leases activos</h2>
+        <ul id="leases"><li class="muted">Elige un canal</li></ul>
+        <h2>Contexto compartido</h2>
+        <ul id="kv"><li class="muted">Elige un canal</li></ul>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

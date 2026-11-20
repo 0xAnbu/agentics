@@ -1,0 +1,67 @@
+:root {
+  --bg: #0f1115; --panel: #171a21; --line: #262b36; --text: #e6e8ee; --muted: #8a93a6;
+  --accent: #6ea8fe; --ok: #4cc38a; --warn: #f5b84d; --bad: #f06a6a;
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f6f7f9; --panel: #fff; --line: #e3e6ec; --text: #1b1f27; --muted: #5f6878; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+[hidden] { display: none !important; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 16px 0 6px; }
+ul, ol { list-style: none; margin: 0; padding: 0; }
+button { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 12px; cursor: pointer; font: inherit; }
+button:hover, button:focus-visible { border-color: var(--accent); outline: none; }
+.muted { color: var(--muted); }
+.error { color: var(--bad); min-height: 1.2em; }
+
+.login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.login form { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 24px;
+  width: min(420px, 100%); display: grid; gap: 10px; }
+.login h1 { margin: 0; }
+.login input { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg);
+  color: var(--text); font: inherit; }
+.hint { color: var(--muted); font-size: 12px; margin: 0; }
+
+header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line);
+  background: var(--panel); flex-wrap: wrap; }
+.stats { display: flex; gap: 16px; margin-left: auto; flex-wrap: wrap; }
+.stat b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 11px; }
+
+.layout { display: grid; grid-template-columns: 220px 1fr 300px; gap: 0; height: calc(100vh - 58px); }
+.layout > * { overflow: auto; padding: 0 14px 14px; }
+.layout > aside { border-right: 1px solid var(--line); }
+.layout > aside:last-child { border-right: 0; border-left: 1px solid var(--line); }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; height: auto; }
+  .layout > aside { border: 0; }
+}
+
+#channels li { padding: 4px 8px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; }
+#channels li[aria-current="true"] { background: var(--line); }
+#channels li:focus-visible { outline: 2px solid var(--accent); }
+#presence li, #tasks li, #leases li, #kv li { padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+.dot.online { background: var(--ok); } .dot.busy { background: var(--warn); }
+
+.feed-head { display: flex; align-items: center; gap: 12px; position: sticky; top: 0; background: var(--bg);
+  padding-top: 6px; z-index: 1; }
+.pill { font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.pill.live { color: var(--ok); border-color: var(--ok); }
+.pill.down { color: var(--bad); border-color: var(--bad); }
+#feed li { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; background: var(--panel); }
+#feed .meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+#feed .author { color: var(--accent); font-weight: 600; }
+#feed .body { white-space: pre-wrap; word-break: break-word; margin-top: 4px; }
+#feed pre { margin: 6px 0 0; padding: 6px; background: var(--bg); border-radius: 6px; overflow: auto;
+  font-size: 12px; max-height: 160px; }
+.kind { padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); font-size: 11px; }
+.kind-task, .kind-handoff { color: var(--warn); border-color: var(--warn); }
+.kind-decision, .kind-context { color: var(--ok); border-color: var(--ok); }
+.kind-alert { color: var(--bad); border-color: var(--bad); }
+.kind-event { color: var(--accent); border-color: var(--accent); }
+.kind-system { opacity: .7; }
