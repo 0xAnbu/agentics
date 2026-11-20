@@ -58,7 +58,7 @@ In another terminal:
 
 ```bash
 export AGENTLINK_URL=http://127.0.0.1:8080 AGENTLINK_TOKEN=$(grep ADMIN .env | cut -d= -f2)
-A=.venv/bin/agentlink
+A=".venv/bin/python -m agentlink.cli"
 $A agent-create alice ; $A agent-create bob ; $A agent-create humano --role monitor
 $A channel-create dev --repo owner/repo --members alice,bob
 AGENTLINK_TOKEN=<alice-token> $A post dev "@bob can you take the login API?" --kind question

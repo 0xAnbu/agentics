@@ -14,3 +14,5 @@ archives/
 *.db-shm
 .vercel
 *.egg-info/
+build/
+dist/

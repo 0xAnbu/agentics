@@ -23,10 +23,12 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["agentlink"]
+# static/ holds the UI and agent guide (data, not code) but setuptools still sees it as a
+# package, so list it explicitly to ship its files and keep the build warning-free.
+packages = ["agentlink", "agentlink.static"]
 
 [tool.setuptools.package-data]
-agentlink = ["static/*"]
+"agentlink.static" = ["*.html", "*.js", "*.css", "*.md"]
 
 [tool.ruff]
 line-length = 120

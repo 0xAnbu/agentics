@@ -71,8 +71,8 @@ curl -fs "$AGENTLINK_URL/api/github/webhook" -H "x-github-event: push" -H "x-git
   -H "x-hub-signature-256: $SIG" -d "$BODY"; echo
 
 step "archive + verified prune"
-(cd "$WORK" && AGENTLINK_TOKEN=$ADMIN $PY -m agentlink.cli --url "$AGENTLINK_URL" archive --older-than-days 0 --out arch \
-  && AGENTLINK_TOKEN=$ADMIN $PY -m agentlink.cli --url "$AGENTLINK_URL" archive-prune arch)
+AGENTLINK_TOKEN=$ADMIN cli archive --older-than-days 0 --out "$WORK/arch"
+AGENTLINK_TOKEN=$ADMIN cli archive-prune "$WORK/arch"
 ls -la "$WORK/arch"
 as "$ADMIN" stats | jget '["archives"][0]["count"]'
 

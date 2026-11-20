@@ -8,9 +8,12 @@ $(BIN)/python:
 	$(PY) -m venv $(VENV)
 	$(BIN)/pip install -q --upgrade pip
 
-install: $(BIN)/python ## install runtime + dev dependencies
+# Stamp file: dependencies are reinstalled only when a requirements file changes.
+$(VENV)/.installed: requirements.txt requirements-dev.txt | $(BIN)/python
 	$(BIN)/pip install -q -r requirements-dev.txt
-	$(BIN)/pip install -q -e . --no-deps
+	@touch $@
+
+install: $(VENV)/.installed ## install runtime + dev dependencies
 
 dev: install ## run locally with hot reload on http://127.0.0.1:8080
 	$(BIN)/python -m agentlink.serve --reload
