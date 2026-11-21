@@ -103,8 +103,51 @@ def set_agent_disabled(db: Database, p: Principal, agent_name: str, disabled: bo
     return {"agent": agent["name"], "disabled": disabled}
 
 
+DELETED_MARK = " (deleted #"  # never matches NAME_RE, so a tombstone can't be targeted or recreated
+
+
+def delete_agent(db: Database, p: Principal, agent_name: str, purge_messages: bool = False) -> dict[str, Any]:
+    """Admin-only: remove an agent and its credentials, memberships, leases, presence and mentions.
+
+    The agents row survives as a disabled tombstone renamed ``"<name> (deleted #<id>)"`` so past
+    messages, tasks and context keep a readable author and the name can be reused.
+    ``purge_messages`` also deletes every message the agent wrote.
+    """
+    p.require_admin()
+    agent = agent_by_name(db, v.name(agent_name))
+    aid = int(agent["id"])
+    if agent["name"] == ADMIN_AGENT:
+        raise BadRequest("the bootstrap admin is controlled by AGENTLINK_ADMIN_TOKEN and can't be deleted")
+    if aid == p.agent_id:
+        raise BadRequest("you can't delete the agent you are authenticated as")
+    with db.transaction() as tx:
+        purged = 0
+        if purge_messages:
+            tx.execute("DELETE FROM mentions WHERE message_id IN (SELECT id FROM messages WHERE author_id = ?)", (aid,))
+            purged = tx.execute("DELETE FROM messages WHERE author_id = ?", (aid,))
+        tokens = tx.execute("DELETE FROM tokens WHERE agent_id = ?", (aid,))
+        for sql in (
+            "DELETE FROM members WHERE agent_id = ?",
+            "DELETE FROM leases WHERE holder_id = ?",
+            "DELETE FROM presence WHERE agent_id = ?",
+            "DELETE FROM mentions WHERE agent_id = ?",
+            "UPDATE tasks SET status = 'open', assignee_id = NULL WHERE assignee_id = ? "
+            "AND status IN ('claimed', 'in_progress', 'blocked', 'review')",
+        ):
+            tx.execute(sql, (aid,))
+        tx.execute(
+            "UPDATE agents SET name = ?, disabled = 1, description = '' WHERE id = ?",
+            (f"{agent['name']}{DELETED_MARK}{aid})", aid),
+        )
+        audit(tx, p, "agent.delete", agent["name"], f"tokens={tokens} messages_purged={purged}")
+    return {"deleted": agent["name"], "tokens": tokens, "messages_purged": purged}
+
+
 def list_agents(db: Database, p: Principal) -> list[dict[str, Any]]:
-    agents = db.query("SELECT id, name, role, description, disabled, created_at FROM agents ORDER BY name")
+    agents = db.query(
+        "SELECT id, name, role, description, disabled, created_at FROM agents WHERE name NOT LIKE ? ORDER BY name",
+        (f"%{DELETED_MARK}%",),
+    )
     tokens: dict[int, list[Row]] = {}
     if p.is_admin:
         for t in db.query("SELECT id, agent_id, label, created_at, expires_at, revoked_at, last_used_at FROM tokens"):
@@ -227,6 +270,22 @@ def set_membership(db: Database, p: Principal, ident: str, agent_name: Any, add:
         db.execute("DELETE FROM members WHERE channel_id = ? AND agent_id = ?", (ch["id"], agent["id"]))
     audit(db, p, "member.add" if add else "member.remove", ch["name"], agent["name"])
     return get_channel(db, p, ch["name"]) if (add or p.is_admin) else {"left": ch["name"]}
+
+
+def delete_channel(db: Database, p: Principal, ident: str) -> dict[str, Any]:
+    """Admin-only: remove a channel and everything in it (messages, tasks, leases, context)."""
+    p.require_admin()
+    with db.transaction() as tx:
+        ch = _channel_row(tx, ident)
+        cid = int(ch["id"])
+        tx.execute("DELETE FROM mentions WHERE message_id IN (SELECT id FROM messages WHERE channel_id = ?)", (cid,))
+        n = tx.execute("DELETE FROM messages WHERE channel_id = ?", (cid,))
+        for table in ("tasks", "leases", "kv", "members"):
+            tx.execute(f"DELETE FROM {table} WHERE channel_id = ?", (cid,))
+        tx.execute("UPDATE presence SET channel_id = NULL WHERE channel_id = ?", (cid,))
+        tx.execute("DELETE FROM channels WHERE id = ?", (cid,))
+        audit(tx, p, "channel.delete", ch["name"], f"messages={n}")
+    return {"deleted": ch["name"], "messages": n}
 
 
 def channels_for_repo(db: Executor, repo: str) -> list[Row]:

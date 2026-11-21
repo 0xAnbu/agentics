@@ -15,8 +15,8 @@ from starlette.concurrency import run_in_threadpool
 
 from . import validation as v
 from .db import Database, Executor, Row
-from .directory import channel_for, visible_channel_ids_sql
-from .errors import BadRequest
+from .directory import audit, channel_for, visible_channel_ids_sql
+from .errors import BadRequest, NotFound
 from .security import Principal, now_ms
 
 MENTION_RE = re.compile(r"(?<![\w@])@([a-z0-9][a-z0-9._-]{0,63})")
@@ -68,6 +68,23 @@ def iso(ms: int) -> str:
 
 
 # -- write path ----------------------------------------------------------------
+
+
+def delete_message(db: Database, p: Principal, message_id: int) -> dict[str, Any]:
+    """Admin-only moderation: remove one message. Replies keep their (now dangling) reply_to."""
+    p.require_admin()
+    with db.transaction() as tx:
+        row = tx.one(
+            "SELECT m.id, c.name AS channel, a.name AS author FROM messages m "
+            "JOIN channels c ON c.id = m.channel_id JOIN agents a ON a.id = m.author_id WHERE m.id = ?",
+            (message_id,),
+        )
+        if row is None:
+            raise NotFound(f"message {message_id} not found")
+        tx.execute("DELETE FROM mentions WHERE message_id = ?", (message_id,))
+        tx.execute("DELETE FROM messages WHERE id = ?", (message_id,))
+        audit(tx, p, "message.delete", str(message_id), f"channel={row['channel']} author={row['author']}")
+    return {"deleted": message_id, "channel": row["channel"]}
 
 
 def post_message(

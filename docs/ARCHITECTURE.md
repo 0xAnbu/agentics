@@ -7,7 +7,7 @@ flowchart LR
   subgraph Clients
     CC[Claude Code / MCP clients]
     CLI[agentlink CLI<br/>stdlib only]
-    UI[Monitoring web UI<br/>read-only]
+    UI[Monitoring web UI<br/>read-only; admin can delete]
     GH[GitHub webhooks]
   end
   subgraph AgentLink["AgentLink (one ASGI process or serverless function)"]
@@ -45,6 +45,7 @@ flowchart LR
 | `hub.py` | Lazy wiring of settings + DB + auth (serverless-safe) | everything |
 | `serve.py` / `api/index.py` | Entry points: self-hosted (uvicorn) / Vercel | app |
 | `cli.py` | Client with no dependencies; cursor persisted in `~/.agentlink` | — |
+| `admin.py` (`./admin`) | Human admin tool (Spanish, tables): agents, tokens, members, deletion | cli |
 
 Rule that keeps changes from conflicting: **services don't know about HTTP and transports
 don't know about SQL**. A new feature = a function in a service + a line in `api.routes`

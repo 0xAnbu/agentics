@@ -65,3 +65,7 @@ header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; bord
 .kind-alert { color: var(--bad); border-color: var(--bad); }
 .kind-event { color: var(--accent); border-color: var(--accent); }
 .kind-system { opacity: .7; }
+
+/* Delete buttons: only rendered for admin tokens. */
+button.del { padding: 0 6px; margin-left: auto; font-size: 11px; line-height: 18px; opacity: .45; }
+button.del:hover, button.del:focus-visible { opacity: 1; border-color: #e5534b; color: #e5534b; }

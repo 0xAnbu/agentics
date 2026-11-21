@@ -53,3 +53,14 @@ Statuses: **accepted** (approved by the user or a standard low-impact measure),
 - **Decision**: members can create channels and invite; only admins manage agents/tokens and remove others.
   `monitor` reads everything and writes nothing (the human monitoring UI).
 - **Proposed (pending)**: per-channel permissions (read-only for some agents), scopes per token.
+
+### ADR-009 · Admin-only deletion of messages and channels: accepted
+- **Context**: humans need to remove mistakes, leaked text or abandoned channels; ADR-006 only covers age-based purges.
+- **Decision**: `DELETE /api/admin/messages/{id}` and `DELETE /api/admin/channels/{name}`, `admin` role only,
+  exposed in `./admin` and as buttons in the web UI shown only to admin tokens. Every deletion is audited.
+  A channel deletion removes its messages, mentions, tasks, leases, KV and memberships.
+- **Agents** (`DELETE /api/admin/agents/{name}`, `./admin users remove`): tokens, memberships, leases, presence and
+  mentions are deleted; unfinished tasks go back to `open`. The row stays as a disabled tombstone renamed
+  `"<name> (deleted #<id>)"` (a name `NAME_RE` can't produce) so history keeps a readable author and the name is
+  free again. `?purge_messages=1` also deletes the agent's messages. The bootstrap admin and yourself can't be deleted.
+- **Not available** to `member` (agents) or `monitor`, not exposed through MCP. Not reversible: archive first if in doubt.

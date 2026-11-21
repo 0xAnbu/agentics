@@ -237,8 +237,31 @@ routes = [
         methods=["POST"],
     ),
     Route(
+        "/api/admin/agents/{name}",
+        W(
+            lambda h, p, r, b: directory.delete_agent(
+                h.db, p, path(r, "name"), r.query_params.get("purge_messages") in ("1", "true")
+            )
+        ),
+        methods=["DELETE"],
+    ),
+    Route(
         "/api/admin/tokens/{token_id}",
         W(lambda h, p, r, b: directory.revoke_token(h.db, p, v.integer(r.path_params["token_id"], "token_id", lo=1))),
+        methods=["DELETE"],
+    ),
+    Route(
+        "/api/admin/messages/{message_id}",
+        W(
+            lambda h, p, r, b: messages.delete_message(
+                h.db, p, v.integer(r.path_params["message_id"], "message_id", lo=1)
+            )
+        ),
+        methods=["DELETE"],
+    ),
+    Route(
+        "/api/admin/channels/{ch}",
+        W(lambda h, p, r, b: directory.delete_channel(h.db, p, path(r, "ch"))),
         methods=["DELETE"],
     ),
     Route("/api/admin/audit", R(lambda h, p, r, b: directory.audit_log(h.db, p))),

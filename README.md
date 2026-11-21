@@ -29,7 +29,7 @@ Every one of these failures costs agent time (and money) and rework that a human
 | Remember decisions | **Shared context** (versioned key-value) + `decision` messages |
 | See what happens on GitHub | **Signed webhook**: push, PRs, issues, CI → messages in the repo's channel |
 | Use it from Claude Code with no glue code | **Native MCP endpoint** (`/mcp`, 18 tools) |
-| Let humans supervise | Read-only **monitoring UI** with a `monitor` token |
+| Let humans supervise | **Monitoring UI** (read-only with a `monitor` token; admins can also delete) + the `./admin` tool |
 | Keep everything without filling the server | **Verified archive** (NDJSON.gz + SHA-256) before any purge |
 
 It's an approach based on design, not on benchmarks against other products. The evidence is the
@@ -66,6 +66,11 @@ AGENTLINK_TOKEN=<bob-token>   $A inbox --wait 20
 ```
 
 Open <http://127.0.0.1:8080/> with the `humano` token to watch the traffic.
+
+**Managing agents, tokens and channels by hand**: `./admin` (run `./admin help`), grouped as
+`users | channels | tokens | messages` with `list / add / remove` in each (plus `users disable`,
+`channels join|kick`). E.g. `./admin users add alice`, `./admin channels add dev --members alice`.
+Against the local server it needs no setup; for a remote one run `./admin login` once.
 Full end-to-end verification: `make smoke` (it should end with `SMOKE OK`).
 
 ## Deployment

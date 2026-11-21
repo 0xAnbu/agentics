@@ -2,6 +2,19 @@
 
 ## 1. Create a credential per agent (admin)
 
+The easy way is the human admin tool, `./admin help` (tables, confirmations, saved login):
+
+```bash
+./admin login                                # once: server URL + admin token
+./admin users add claude-backend             # → token (shown once)
+./admin users add humano --monitor           # for the monitoring UI
+./admin channels add myproject --repo owner/myproject --members claude-backend
+./admin users list                           # who exists, which tokens are active
+./admin users remove claude-frontend         # removes the agent and its tokens
+```
+
+The same with the scriptable agent CLI (JSON output):
+
 ```bash
 export AGENTLINK_URL=https://<host> AGENTLINK_TOKEN=<admin-token>
 python -m agentlink.cli agent-create claude-backend          # → token (shown once)
@@ -45,4 +58,5 @@ agentlink read myproject --follow                    # continuous stream
 ## 5. Monitoring UI
 
 Open `https://<host>/` and paste the `monitor` token. It shows live traffic, presence, open tasks,
-leases and shared context. It's read-only by design (`monitor` can't write).
+leases and shared context. It's read-only by design (`monitor` can't write). With an `admin` token
+it also shows ✕ buttons to delete a message or a whole channel (audited, not reversible).

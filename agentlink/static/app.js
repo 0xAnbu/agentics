@@ -1,10 +1,10 @@
-// AgentLink read-only monitor. Security rule: untrusted text is only ever
+// AgentLink monitor (read-only, plus delete buttons for admin tokens). Security rule: untrusted text is only ever
 // assigned via textContent (never as HTML), and the token stays in sessionStorage.
 "use strict";
 
 const $ = (id) => document.getElementById(id);
 const state = { token: sessionStorage.getItem("agentlink_token") || "", after: null, channel: null,
-  paused: false, seen: new Set(), loopId: 0, timer: null };
+  paused: false, seen: new Set(), loopId: 0, timer: null, admin: false };
 const MAX_FEED = 500;
 
 function el(tag, attrs = {}, ...children) {
@@ -16,8 +16,8 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-async function api(path, { signal } = {}) {
-  const res = await fetch(path, { headers: { Authorization: `Bearer ${state.token}` }, signal,
+async function api(path, { signal, method = "GET" } = {}) {
+  const res = await fetch(path, { method, headers: { Authorization: `Bearer ${state.token}` }, signal,
     cache: "no-store", credentials: "omit" });
   if (res.status === 401) { logout("Token inválido o revocado"); throw new Error("unauthorized"); }
   if (!res.ok) throw new Error(`${res.status}`);
@@ -57,10 +57,34 @@ async function loadChannels() {
     const li = el("li", { tabindex: "0", "aria-current": String(state.channel === c.name), title: c.repo || "" },
       el("span", {}, `#${c.name}`), el("span", { class: "muted" }, c.repo ? "⎇" : ""));
     li.addEventListener("click", () => selectChannel(c.name));
-    li.addEventListener("keydown", (e) => { if (e.key === "Enter") selectChannel(c.name); });
+    li.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === li) selectChannel(c.name); });
+    if (state.admin) li.append(delButton(`Borrar el canal #${c.name}`, () => deleteChannel(c.name)));
     return li;
   });
   $("channels").replaceChildren(all, ...items);
+}
+
+function delButton(label, onClick) {
+  const b = el("button", { type: "button", class: "del", title: label, "aria-label": label }, "✕");
+  b.addEventListener("click", (e) => { e.stopPropagation(); onClick(); });
+  return b;
+}
+
+async function deleteMessage(id, li) {
+  if (!confirm(`¿Borrar el mensaje #${id}? No se puede deshacer.`)) return;
+  try { await api(`/api/admin/messages/${id}`, { method: "DELETE" }); li.remove(); }
+  catch (e) { alert(`No se pudo borrar el mensaje (${e.message})`); }
+}
+
+async function deleteChannel(name) {
+  const typed = prompt(`Esto borra #${name} con TODOS sus mensajes, tareas, leases y contexto.\n` +
+    "No se puede deshacer. Escribe el nombre del canal para confirmar:");
+  if (typed !== name) return;
+  try {
+    await api(`/api/admin/channels/${encodeURIComponent(name)}`, { method: "DELETE" });
+    for (const li of [...$("feed").children]) if (li.dataset.channel === name) li.remove();
+    if (state.channel === name) selectChannel(null); else loadChannels();
+  } catch (e) { alert(`No se pudo borrar el canal (${e.message})`); }
 }
 
 function selectChannel(name) {
@@ -107,6 +131,7 @@ function render(m) {
   if (m.reply_to) meta.append(el("span", {}, `↩ #${m.reply_to}`));
   if (m.mentions) meta.append(el("span", {}, "→ " + m.mentions.map((x) => "@" + x).join(" ")));
   const li = el("li", {}, meta, el("div", { class: "body" }, m.body));
+  if (state.admin) meta.append(delButton(`Borrar el mensaje #${m.id}`, () => deleteMessage(m.id, li)));
   const extra = {};
   if (m.refs) extra.refs = m.refs;
   if (m.data) extra.data = m.data;
@@ -143,6 +168,7 @@ function logout(msg = "") {
   state.loopId++;
   sessionStorage.removeItem("agentlink_token");
   state.token = "";
+  state.admin = false;
   $("app").hidden = true;
   $("login").hidden = false;
   $("login-error").textContent = msg;
@@ -152,6 +178,7 @@ async function start() {
   try {
     const me = await api("/api/me");
     $("whoami").textContent = `@${me.agent} · ${me.role}`;
+    state.admin = me.role === "admin";
   } catch (e) {
     if (e.message !== "unauthorized") logout("No se pudo conectar con el servidor");
     return;

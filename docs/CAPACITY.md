@@ -59,7 +59,7 @@ Sensitivity:
 
 ## 4. Retention: alternatives so the server doesn't fill up
 
-The requirement is that **messages must be kept**. That is why nothing is deleted unless it has first been archived and verified.
+The requirement is that **messages must be kept**. That is why retention never deletes anything that has not first been archived and verified (the only other deletion is a manual, audited admin action: ADR-009).
 
 | # | Alternative | Status | When to use it |
 |---|---|---|---|
